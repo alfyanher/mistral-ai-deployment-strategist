@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mistral AI · AI Deployment Strategist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* ─── Mistral Brand Tokens ───────────────────────────────────────── */
+    :root {
+      /* Mistral official palette */
+      --mistral-orange:    #FF7000;
+      --mistral-orange-2:  #FF5500;
+      --mistral-orange-3:  #FF3C00;
+      --mistral-dark:      #0D0D0D;
+      --mistral-dark-2:    #141414;
+      --mistral-dark-3:    #1C1C1C;
+
+      --bg:           var(--mistral-dark);
+      --bg-2:         var(--mistral-dark-2);
+      --bg-card:      rgba(255,255,255,0.035);
+      --bg-card-hov:  rgba(255,255,255,0.06);
+      --border:       rgba(255,255,255,0.07);
+      --border-hov:   rgba(255,255,255,0.14);
+      --border-accent:rgba(255,112,0,0.35);
+
+      --text-1: #F5F5F5;
+      --text-2: #888888;
+      --text-3: #444444;
+
+      --radius-sm: 8px;
+      --radius:    14px;
+      --radius-lg: 20px;
+      --blur: blur(24px);
+      --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+
+      --agent-1: #FF7000;
+      --agent-2: #FF5500;
+      --agent-3: #CC2000;
+      --agent-4: #FF5500;
+      --agent-5: #FF7000;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── Subtle background grid ─────────────────────────────────────── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,112,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,112,0,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(255,112,0,0.07), transparent 65%);
+      top: -200px; right: -100px;
+      border-radius: 50%;
+      animation: floatglow 18s ease-in-out infinite alternate;
+    }
+    @keyframes floatglow {
+      from { transform: translate(0,0); }
+      to   { transform: translate(-60px, 80px); }
+    }
+
+    /* ─── Layout ─────────────────────────────────────────────────────── */
+    .app {
+      position: relative; z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 52px 24px 100px;
+    }
+
+    /* ─── Top nav / attribution bar ──────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 52px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .topbar-logo svg { width: 28px; height: 28px; }
+    .topbar-logo-text {
+      font-size: 15px; font-weight: 700; letter-spacing: -0.02em;
+      color: var(--text-1);
+    }
+    .topbar-logo-text span { color: var(--mistral-orange); }
+    .topbar-right {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tech-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      background: rgba(255,112,0,0.08);
+      border: 1px solid rgba(255,112,0,0.2);
+      border-radius: 100px;
+      font-size: 11.5px; font-weight: 500;
+      color: var(--mistral-orange);
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+      position: relative;
+    }
+    .tech-pill:hover { background: rgba(255,112,0,0.14); border-color: rgba(255,112,0,0.4); }
+    .tech-pill .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--mistral-orange);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.4; transform:scale(0.7); }
+    }
+
+    /* ─── Tech Modal ─────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    .modal {
+      background: var(--bg-2);
+      border: 1px solid var(--border-hov);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 560px; width: 100%;
+      margin: 16px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      animation: slideUp 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    @keyframes slideUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .modal-title {
+      font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .modal-title .badge {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; padding: 2px 8px;
+      background: rgba(255,112,0,0.12);
+      color: var(--mistral-orange);
+      border-radius: 100px;
+    }
+    .modal-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-2); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition);
+    }
+    .modal-close:hover { background: var(--bg-card-hov); color: var(--text-1); }
+    .modal-section { margin-bottom: 20px; }
+    .modal-section:last-child { margin-bottom: 0; }
+    .modal-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 10px;
+    }
+    .doc-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      margin-bottom: 6px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .doc-link:hover { background: var(--bg-card-hov); border-color: var(--border-accent); }
+    .doc-link-icon {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: rgba(255,112,0,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .doc-link-body { flex: 1; min-width: 0; }
+    .doc-link-title {
+      font-size: 13px; font-weight: 500; color: var(--text-1);
+    }
+    .doc-link-desc { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+    .doc-link-arrow { color: var(--text-3); font-size: 12px; flex-shrink: 0; }
+    .tech-stack-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .tech-item {
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .tech-item-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .tech-item-value { font-size: 13px; font-weight: 500; color: var(--text-1); margin-top: 3px; }
+
+    /* ─── Header ─────────────────────────────────────────────────────── */
+    .header { margin-bottom: 40px; }
+    .header-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.09em;
+      text-transform: uppercase; color: var(--mistral-orange);
+      margin-bottom: 16px;
+    }
+    .header-eyebrow::before {
+      content: '';
+      display: inline-block; width: 16px; height: 2px;
+      background: var(--mistral-orange);
+    }
+    h1 {
+      font-size: clamp(28px, 4.5vw, 44px);
+      font-weight: 700; letter-spacing: -0.025em; line-height: 1.12;
+      margin-bottom: 14px;
+      color: var(--text-1);
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--mistral-orange), var(--mistral-orange-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-sub {
+      font-size: 15px; color: var(--text-2); max-width: 520px; line-height: 1.65;
+    }
+
+    /* ─── Search Box ─────────────────────────────────────────────────── */
+    .search-section { margin-bottom: 36px; }
+    .search-label {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 10px;
+    }
+    .search-wrap {
+      position: relative;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .search-box {
+      flex: 1;
+      display: flex; align-items: center;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 16px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .search-box:focus-within {
+      border-color: rgba(255,112,0,0.5);
+      box-shadow: 0 0 0 3px rgba(255,112,0,0.08);
+    }
+    .search-icon { font-size: 16px; margin-right: 10px; color: var(--text-3); flex-shrink: 0; }
+    .search-input {
+      flex: 1; background: none; border: none; outline: none;
+      font-family: inherit; font-size: 15px; font-weight: 400;
+      color: var(--text-1); padding: 14px 0;
+    }
+    .search-input::placeholder { color: var(--text-3); }
+    .search-clear {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 18px; padding: 4px; line-height: 1;
+      display: none;
+      transition: color var(--transition);
+    }
+    .search-clear:hover { color: var(--text-2); }
+    .search-clear.visible { display: block; }
+    .search-hint {
+      font-size: 12px; color: var(--text-3); margin-top: 8px;
+    }
+    .search-hint span { color: var(--mistral-orange); }
+
+    /* Suggestions dropdown */
+    .search-suggestions {
+      position: absolute; top: calc(100% + 6px); left: 0;
+      width: calc(100% - 124px);
+      background: var(--bg-2);
+      border: 1px solid var(--border-hov);
+      border-radius: var(--radius);
+      overflow: hidden;
+      z-index: 50;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .search-suggestions.open { display: block; animation: fadeIn 0.15s ease; }
+    .suggestion {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer;
+      transition: background var(--transition);
+      font-size: 13.5px;
+    }
+    .suggestion:hover { background: var(--bg-card-hov); }
+    .suggestion-icon { font-size: 16px; }
+    .suggestion-name { font-weight: 500; color: var(--text-1); }
+    .suggestion-sector { font-size: 11px; color: var(--text-3); margin-left: auto; }
+
+    /* ─── Run Button ─────────────────────────────────────────────────── */
+    .btn-run {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 28px;
+      background: var(--mistral-orange);
+      color: #000; font-family: inherit; font-size: 14px; font-weight: 700;
+      letter-spacing: -0.01em;
+      border: none; border-radius: var(--radius);
+      cursor: pointer; white-space: nowrap;
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition), opacity var(--transition);
+      box-shadow: 0 4px 20px rgba(255,112,0,0.3);
+      flex-shrink: 0;
+    }
+    .btn-run:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(255,112,0,0.45);
+      background: #FF8420;
+    }
+    .btn-run:active:not(:disabled) { transform: translateY(0); }
+    .btn-run:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+    /* ─── Company Profile Card ───────────────────────────────────────── */
+    .profile-card {
+      display: none;
+      background: rgba(255,112,0,0.04);
+      border: 1px solid rgba(255,112,0,0.2);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      animation: fadeIn 0.4s ease;
+    }
+    .profile-card.visible { display: block; }
+    .profile-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    }
+    .profile-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(255,112,0,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .profile-company { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+    .profile-status {
+      margin-left: auto; font-size: 11px; font-weight: 600;
+      padding: 3px 9px; border-radius: 100px;
+      background: rgba(255,112,0,0.12); color: var(--mistral-orange);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .profile-content {
+      font-size: 13px; color: rgba(245,245,245,0.75); line-height: 1.7;
+      max-height: 160px; overflow: hidden; position: relative;
+    }
+    .profile-content.expanded { max-height: none; }
+    .profile-fade {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 48px;
+      background: linear-gradient(transparent, rgba(255,112,0,0.04));
+      pointer-events: none;
+    }
+    .profile-content.expanded .profile-fade { display: none; }
+    .profile-toggle {
+      font-size: 12px; color: var(--mistral-orange);
+      background: none; border: none; cursor: pointer;
+      font-family: inherit; font-weight: 500; padding: 0; margin-top: 8px;
+    }
+
+    /* ─── Pipeline Viz ───────────────────────────────────────────────── */
+    .pipeline-viz {
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 36px; overflow-x: auto; gap: 0; padding: 4px 0;
+    }
+    .pipeline-node {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; flex-shrink: 0;
+    }
+    .pipeline-dot {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; background: var(--bg-2);
+      border: 2px solid rgba(255,255,255,0.08);
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .pipeline-dot.active {
+      transform: scale(1.2);
+      border-color: var(--mistral-orange);
+      box-shadow: 0 0 16px rgba(255,112,0,0.3);
+    }
+    .pipeline-dot.done {
+      border-color: rgba(255,112,0,0.4);
+    }
+    .pipeline-label {
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--text-3); white-space: nowrap;
+    }
+    .pipeline-arrow {
+      width: 24px; height: 1px;
+      background: rgba(255,255,255,0.1); flex-shrink: 0; margin-bottom: 22px;
+      position: relative;
+    }
+    .pipeline-arrow::after {
+      content: '';
+      position: absolute; right: 0; top: -3px;
+      width: 0; height: 0;
+      border-top: 3px solid transparent;
+      border-bottom: 3px solid transparent;
+      border-left: 5px solid rgba(255,255,255,0.1);
+    }
+
+    /* ─── Progress bar ───────────────────────────────────────────────── */
+    .progress-bar {
+      height: 2px; background: var(--border); border-radius: 1px;
+      margin-bottom: 36px; overflow: hidden; display: none;
+    }
+    .progress-bar.visible { display: block; }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--mistral-orange-3), var(--mistral-orange));
+      border-radius: 1px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ─── Agent Cards ────────────────────────────────────────────────── */
+    .agents-grid { display: flex; flex-direction: column; gap: 12px; }
+
+    .agent-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      opacity: 0; transform: translateY(16px);
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .agent-card.visible {
+      opacity: 1; transform: translateY(0);
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.4,0,0.2,1),
+                  border-color var(--transition), background var(--transition);
+    }
+    .agent-card:hover { background: var(--bg-card-hov); }
+    .agent-card.streaming {
+      border-color: rgba(255,112,0,0.35);
+      box-shadow: 0 0 32px rgba(255,112,0,0.08);
+    }
+
+    .card-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px; cursor: pointer; user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color var(--transition);
+    }
+    .agent-card.has-content .card-header { border-bottom-color: var(--border); }
+
+    .agent-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+      transition: background var(--transition);
+    }
+    .agent-card.streaming .agent-icon {
+      background: rgba(255,112,0,0.1);
+      border-color: rgba(255,112,0,0.25);
+    }
+
+    .card-meta { flex: 1; min-width: 0; }
+    .card-title {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--mistral-orange);
+    }
+    .card-subtitle { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+
+    .thinking-indicator { display: none; align-items: center; gap: 3px; }
+    .agent-card.streaming .thinking-indicator { display: flex; }
+    .thinking-dot {
+      width: 3.5px; height: 3.5px; border-radius: 50%;
+      background: var(--mistral-orange);
+      animation: thinking 1.3s ease-in-out infinite;
+    }
+    .thinking-dot:nth-child(2) { animation-delay: 0.18s; }
+    .thinking-dot:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes thinking {
+      0%,80%,100% { transform:scale(0.5); opacity:0.3; }
+      40%          { transform:scale(1); opacity:1; }
+    }
+
+    .status-badge {
+      font-size: 10.5px; font-weight: 600; padding: 3px 9px;
+      border-radius: 100px; letter-spacing: 0.05em; text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .status-badge.waiting { background: rgba(255,255,255,0.04); color: var(--text-3); }
+    .status-badge.streaming {
+      background: rgba(255,112,0,0.12); color: var(--mistral-orange);
+    }
+    .status-badge.done {
+      background: rgba(255,112,0,0.08); color: rgba(255,112,0,0.7);
+    }
+
+    .card-chevron { font-size: 11px; color: var(--text-3); transition: transform var(--transition); flex-shrink: 0; }
+    .agent-card.expanded .card-chevron { transform: rotate(180deg); }
+
+    .card-body { overflow: hidden; max-height: 0; transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1); }
+    .agent-card.expanded .card-body { max-height: 6000px; }
+
+    .card-content {
+      padding: 22px 24px 26px;
+      font-size: 14px; line-height: 1.75;
+      color: rgba(245,245,245,0.82);
+    }
+
+    /* ─── Markdown inside cards ──────────────────────────────────────── */
+    .card-content h1, .card-content h2 {
+      font-size: 16px; font-weight: 700; letter-spacing: -0.02em;
+      margin: 22px 0 10px; color: var(--text-1);
+    }
+    .card-content h2:first-child { margin-top: 0; }
+    .card-content h3 {
+      font-size: 12.5px; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--mistral-orange);
+      margin: 18px 0 8px;
+    }
+    .card-content p { margin-bottom: 11px; }
+    .card-content ul, .card-content ol { margin: 6px 0 14px 18px; }
+    .card-content li { margin-bottom: 5px; }
+    .card-content strong { color: var(--text-1); font-weight: 600; }
+    .card-content code {
+      background: rgba(255,112,0,0.08); border: 1px solid rgba(255,112,0,0.15);
+      padding: 2px 6px; border-radius: 4px; font-size: 12.5px;
+      font-family: 'SF Mono', 'Fira Code', monospace; color: var(--mistral-orange);
+    }
+    .card-content pre {
+      background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-sm); padding: 14px 18px;
+      overflow-x: auto; margin: 14px 0;
+    }
+    .card-content pre code {
+      background: none; border: none; padding: 0; color: #f0c27f; font-size: 12.5px;
+    }
+    .card-content table {
+      width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px;
+    }
+    .card-content th {
+      text-align: left; padding: 9px 13px;
+      background: rgba(255,112,0,0.06); border-bottom: 1px solid rgba(255,112,0,0.15);
+      font-weight: 600; color: var(--text-2); font-size: 10.5px;
+      letter-spacing: 0.07em; text-transform: uppercase;
+    }
+    .card-content td { padding: 9px 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .card-content tr:last-child td { border-bottom: none; }
+    .card-content blockquote {
+      border-left: 3px solid var(--mistral-orange); padding-left: 14px;
+      margin: 11px 0; color: var(--text-2); font-style: italic;
+    }
+    .card-content hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    /* ─── Cards toolbar (expand / collapse all) ─────────────────────── */
+    .cards-toolbar {
+      display: none;
+      align-items: center; justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+    .cards-toolbar.visible { display: flex; }
+    .toolbar-label {
+      font-size: 11.5px; font-weight: 600; color: var(--text-3);
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .toolbar-btns { display: flex; gap: 8px; }
+    .btn-toggle-all {
+      padding: 5px 14px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      font-family: inherit; font-size: 12px; font-weight: 500;
+      border-radius: 100px; cursor: pointer;
+      transition: border-color var(--transition), color var(--transition), background var(--transition);
+    }
+    .btn-toggle-all:hover {
+      border-color: rgba(255,112,0,0.4);
+      color: var(--mistral-orange);
+      background: rgba(255,112,0,0.05);
+    }
+
+    /* ─── Cursor ─────────────────────────────────────────────────────── */
+    .cursor {
+      display: inline-block; width: 2px; height: 1em;
+      background: var(--mistral-orange); vertical-align: text-bottom;
+      margin-left: 2px; animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+    /* ─── Complete banner ────────────────────────────────────────────── */
+    .pipeline-complete {
+      display: none; margin-top: 40px; padding: 28px 32px;
+      background: rgba(255,112,0,0.05);
+      border: 1px solid rgba(255,112,0,0.25);
+      border-radius: var(--radius-lg); text-align: center;
+    }
+    .pipeline-complete.visible { display: block; animation: fadeIn 0.5s ease; }
+    .pipeline-complete h3 {
+      font-size: 18px; font-weight: 700; letter-spacing: -0.01em;
+      color: var(--mistral-orange); margin-bottom: 6px;
+    }
+    .pipeline-complete p { color: var(--text-2); font-size: 13.5px; }
+
+    /* ─── PDF Export button ──────────────────────────────────────────── */
+    .export-row {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      margin-top: 20px; flex-wrap: wrap;
+    }
+    .btn-export {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px;
+      background: transparent;
+      border: 1px solid rgba(255,112,0,0.45);
+      color: var(--mistral-orange);
+      font-family: inherit; font-size: 13.5px; font-weight: 600;
+      border-radius: var(--radius);
+      cursor: pointer; letter-spacing: -0.01em;
+      transition: background var(--transition), border-color var(--transition), transform var(--transition);
+    }
+    .btn-export:hover:not(:disabled) {
+      background: rgba(255,112,0,0.08);
+      border-color: rgba(255,112,0,0.7);
+      transform: translateY(-1px);
+    }
+    .btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-export-icon { font-size: 16px; }
+
+    /* ─── PDF progress overlay ───────────────────────────────────────── */
+    .pdf-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center; justify-content: center;
+    }
+    .pdf-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    .pdf-box {
+      background: var(--bg-2); border: 1px solid var(--border-hov);
+      border-radius: var(--radius-lg); padding: 40px 48px;
+      text-align: center; max-width: 360px; width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    .pdf-spinner {
+      width: 48px; height: 48px; margin: 0 auto 20px;
+      border: 3px solid rgba(255,112,0,0.15);
+      border-top-color: var(--mistral-orange);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    .pdf-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .pdf-sub { font-size: 13px; color: var(--text-2); }
+    .footer {
+      text-align: center; margin-top: 64px;
+      color: var(--text-3); font-size: 11.5px; letter-spacing: 0.03em;
+    }
+    .footer span { color: var(--mistral-orange); }
+
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      .topbar-right { display: none; }
+      .pipeline-arrow { width: 12px; }
+      .pipeline-label { font-size: 8px; }
+      .card-content { padding: 14px 16px 18px; font-size: 13.5px; }
+      .tech-stack-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- Tech Modal -->
+<div class="modal-overlay" id="techModal" onclick="closeTechModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">
+        Built with Mistral AI
+        <span class="badge">Live API</span>
+      </div>
+      <button class="modal-close" onclick="closeTechModalBtn()">✕</button>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">Technology Stack</div>
+      <div class="tech-stack-grid">
+        <div class="tech-item">
+          <div class="tech-item-label">LLM Model</div>
+          <div class="tech-item-value">mistral-large-latest</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-item-label">API</div>
+          <div class="tech-item-value">Mistral La Plateforme</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-item-label">Backend</div>
+          <div class="tech-item-value">FastAPI + Python</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-item-label">Streaming</div>
+          <div class="tech-item-value">Server-Sent Events</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-item-label">Agents</div>
+          <div class="tech-item-value">5 Specialist Agents</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-item-label">Context</div>
+          <div class="tech-item-value">Full history chaining</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">Mistral AI Documentation</div>
+
+      <a class="doc-link" href="https://docs.mistral.ai/getting-started/models/models_overview/" target="_blank" rel="noopener">
+        <div class="doc-link-icon">🧠</div>
+        <div class="doc-link-body">
+          <div class="doc-link-title">Models Overview</div>
+          <div class="doc-link-desc">mistral-large-latest capabilities and context window</div>
+        </div>
+        <div class="doc-link-arrow">↗</div>
+      </a>
+
+      <a class="doc-link" href="https://docs.mistral.ai/api/" target="_blank" rel="noopener">
+        <div class="doc-link-icon">⚡</div>
+        <div class="doc-link-body">
+          <div class="doc-link-title">Chat Completions API</div>
+          <div class="doc-link-desc">Streaming API used to power all 5 agents in real time</div>
+        </div>
+        <div class="doc-link-arrow">↗</div>
+      </a>
+
+      <a class="doc-link" href="https://docs.mistral.ai/capabilities/function_calling/" target="_blank" rel="noopener">
+        <div class="doc-link-icon">🔧</div>
+        <div class="doc-link-body">
+          <div class="doc-link-title">Function Calling & Agents</div>
+          <div class="doc-link-desc">Agentic capabilities enabling multi-step reasoning chains</div>
+        </div>
+        <div class="doc-link-arrow">↗</div>
+      </a>
+
+      <a class="doc-link" href="https://docs.mistral.ai/deployment/self-deployment/overview/" target="_blank" rel="noopener">
+        <div class="doc-link-icon">🏛️</div>
+        <div class="doc-link-body">
+          <div class="doc-link-title">On-Premise Deployment</div>
+          <div class="doc-link-desc">Self-hosting open weights for EU data sovereignty (key Spain differentiator)</div>
+        </div>
+        <div class="doc-link-arrow">↗</div>
+      </a>
+
+      <a class="doc-link" href="https://mistral.ai/news/mistral-large/" target="_blank" rel="noopener">
+        <div class="doc-link-icon">🌍</div>
+        <div class="doc-link-body">
+          <div class="doc-link-title">Multilingual Capabilities</div>
+          <div class="doc-link-desc">Spanish, Catalan, Basque — native European language support</div>
+        </div>
+        <div class="doc-link-arrow">↗</div>
+      </a>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">How This Demo Works</div>
+      <p style="font-size:13px;color:var(--text-2);line-height:1.7">
+        Enter any company with a Spain presence. Mistral first researches the company,
+        then routes the profile through 5 specialist agents — each receiving the full
+        output of all previous agents as context. Every response streams live via the
+        Mistral Chat API with <code>stream=True</code>.
+      </p>
+    </div>
+  </div>
+</div>
+
+<main class="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <a class="topbar-logo" href="https://mistral.ai" target="_blank">
+      <!-- Mistral logo mark SVG -->
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="16" fill="#FF7000"/>
+        <rect x="18" y="18" width="20" height="20" fill="black"/>
+        <rect x="62" y="18" width="20" height="20" fill="black"/>
+        <rect x="18" y="62" width="20" height="20" fill="black"/>
+        <rect x="62" y="62" width="20" height="20" fill="black"/>
+        <rect x="40" y="40" width="20" height="20" fill="black"/>
+        <rect x="18" y="40" width="20" height="20" fill="black"/>
+        <rect x="62" y="40" width="20" height="20" fill="black"/>
+      </svg>
+      <span class="topbar-logo-text">Mistral <span>AI</span></span>
+    </a>
+    <div class="topbar-right">
+      <button class="tech-pill" onclick="openTechModal()">
+        <span class="dot"></span>
+        mistral-large-latest · Live API
+      </button>
+      <a class="tech-pill" href="/about" target="_blank" style="text-decoration:none;gap:5px;">
+        📋 About this project
+      </a>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-eyebrow">AI Deployment Strategist · Interview Demo</div>
+    <h1>From Discovery<br>to <em>Deployment</em></h1>
+    <p class="header-sub">
+      Enter any company operating in Spain. Five Mistral-powered agents simulate
+      a full enterprise engagement — MEDDPICC discovery, ROI modelling, PoV design,
+      executive pitch, and account expansion playbook.
+    </p>
+  </header>
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-label">Target Company</div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          class="search-input"
+          id="companyInput"
+          type="text"
+          placeholder="e.g. Santander, BBVA, Inditex, Telefónica, MAPFRE…"
+          autocomplete="off"
+          oninput="onSearchInput()"
+          onkeydown="onSearchKey(event)"
+        />
+        <button class="search-clear" id="clearBtn" onclick="clearSearch()">×</button>
+      </div>
+      <button class="btn-run" id="runBtn" onclick="startEngagement()" disabled>
+        <span id="runBtnIcon">▶</span>
+        <span id="runBtnLabel">Analyse</span>
+      </button>
+      <div class="search-suggestions" id="suggestions"></div>
+    </div>
+    <div class="search-hint">Companies must have operations or offices in <span>Spain</span></div>
+  </div>
+
+  <!-- Company Profile Card -->
+  <div class="profile-card" id="profileCard">
+    <div class="profile-card-header">
+      <div class="profile-icon" id="profileIcon">🏢</div>
+      <div class="profile-company" id="profileCompany"></div>
+      <div class="profile-status" id="profileStatus">Researching…</div>
+    </div>
+    <div class="profile-content" id="profileContent">
+      <div class="profile-fade" id="profileFade"></div>
+    </div>
+    <button class="profile-toggle" id="profileToggle" onclick="toggleProfile()" style="display:none">
+      Show full profile ▼
+    </button>
+  </div>
+
+  <!-- Pipeline Viz -->
+  <div class="pipeline-viz" id="pipelineViz"></div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Cards toolbar -->
+  <div class="cards-toolbar" id="cardsToolbar">
+    <span class="toolbar-label">Pipeline results</span>
+    <div class="toolbar-btns">
+      <button class="btn-toggle-all" onclick="expandAll()">Expand all</button>
+      <button class="btn-toggle-all" onclick="collapseAll()">Collapse all</button>
+    </div>
+  </div>
+
+  <!-- Agent cards -->
+  <div class="agents-grid" id="agentsGrid"></div>
+
+  <!-- PDF progress overlay -->
+  <div class="pdf-overlay" id="pdfOverlay">
+    <div class="pdf-box">
+      <div class="pdf-spinner"></div>
+      <div class="pdf-title">Generating PDF report…</div>
+      <div class="pdf-sub" id="pdfStatus">Preparing sections</div>
+    </div>
+  </div>
+
+  <!-- Complete -->
+  <div class="pipeline-complete" id="pipelineComplete">
+    <h3>🎯 Engagement Complete</h3>
+    <p id="completeMsg">Full deployment lifecycle simulated — ready to present.</p>
+    <div class="export-row">
+      <button class="btn-export" id="exportBtn" onclick="exportPDF()">
+        <span class="btn-export-icon">⬇</span>
+        Export Full Report as PDF
+      </button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    Powered by <span>Mistral AI</span> · mistral-large-latest · La Plateforme API ·
+    <a href="/about" target="_blank" style="color:var(--mistral-orange);text-decoration:none;">
+      About this project ↗
+    </a>
+  </footer>
+
+</main>
+
+<script>
+// ─── Agent Config (matches backend AGENTS list exactly) ─────────────────────
+const AGENTS = [
+  { name: 'Account Strategist',    emoji: '🔍', subtitle: 'MEDDPICC discovery · Spain market qualification' },
+  { name: 'Value Engineer',        emoji: '📊', subtitle: 'ROI model · Business case for the CFO' },
+  { name: 'PoV Architect',         emoji: '🏗️', subtitle: '6-week proof of value · On-prem architecture' },
+  { name: 'Executive Storyteller', emoji: '🎤', subtitle: 'Board deck narrative · Executive pitch' },
+  { name: 'Deployment Strategist', emoji: '🚀', subtitle: 'Production roadmap · Account expansion playbook' },
+];
+
+const MISTRAL_ORANGE = '#FF7000';
+
+const SUGGESTIONS = [
+  { name: 'Santander',    icon: '🏦', sector: 'Banking' },
+  { name: 'BBVA',         icon: '🏦', sector: 'Banking' },
+  { name: 'Telefónica',   icon: '📡', sector: 'Telecom' },
+  { name: 'Inditex',      icon: '👗', sector: 'Retail' },
+  { name: 'MAPFRE',       icon: '🛡️', sector: 'Insurance' },
+  { name: 'Iberdrola',    icon: '⚡', sector: 'Energy' },
+  { name: 'Repsol',       icon: '🛢️', sector: 'Energy' },
+  { name: 'CaixaBank',    icon: '🏦', sector: 'Banking' },
+  { name: 'AXA Spain',    icon: '🛡️', sector: 'Insurance' },
+  { name: 'El Corte Inglés', icon: '🛍️', sector: 'Retail' },
+  { name: 'Mercadona',    icon: '🛒', sector: 'Grocery' },
+  { name: 'Ferrovial',    icon: '🏗️', sector: 'Infrastructure' },
+  { name: 'Acciona',      icon: '🌱', sector: 'Construction' },
+  { name: 'Meliá Hotels', icon: '🏨', sector: 'Hospitality' },
+  { name: 'NH Hotels',    icon: '🏨', sector: 'Hospitality' },
+  { name: 'Renfe',        icon: '🚄', sector: 'Transport' },
+  { name: 'Correos',      icon: '📮', sector: 'Logistics' },
+  { name: 'Naturgy',      icon: '🔥', sector: 'Energy' },
+  { name: 'Endesa',       icon: '⚡', sector: 'Energy' },
+  { name: 'Indra',        icon: '💻', sector: 'Tech/Defence' },
+];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let isRunning = false;
+let companyName = '';
+let companyProfile = '';
+let rawText = {};
+
+// ─── Search logic ─────────────────────────────────────────────────────────────
+function onSearchInput() {
+  const val = document.getElementById('companyInput').value.trim();
+  companyName = val;
+  document.getElementById('clearBtn').classList.toggle('visible', val.length > 0);
+  document.getElementById('runBtn').disabled = val.length < 2 || isRunning;
+  showSuggestions(val);
+}
+
+function showSuggestions(val) {
+  const box = document.getElementById('suggestions');
+  if (!val || val.length < 1) { box.classList.remove('open'); return; }
+  const matches = SUGGESTIONS.filter(s =>
+    s.name.toLowerCase().includes(val.toLowerCase())
+  ).slice(0, 6);
+  if (!matches.length) { box.classList.remove('open'); return; }
+  box.innerHTML = matches.map(s => `
+    <div class="suggestion" onclick="selectSuggestion('${s.name}')">
+      <span class="suggestion-icon">${s.icon}</span>
+      <span class="suggestion-name">${s.name}</span>
+      <span class="suggestion-sector">${s.sector}</span>
+    </div>
+  `).join('');
+  box.classList.add('open');
+}
+
+function selectSuggestion(name) {
+  document.getElementById('companyInput').value = name;
+  companyName = name;
+  document.getElementById('suggestions').classList.remove('open');
+  document.getElementById('clearBtn').classList.add('visible');
+  document.getElementById('runBtn').disabled = isRunning;
+}
+
+function clearSearch() {
+  document.getElementById('companyInput').value = '';
+  companyName = '';
+  document.getElementById('clearBtn').classList.remove('visible');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('suggestions').classList.remove('open');
+}
+
+function onSearchKey(e) {
+  if (e.key === 'Enter' && companyName.length >= 2 && !isRunning) startEngagement();
+  if (e.key === 'Escape') document.getElementById('suggestions').classList.remove('open');
+}
+
+// hide suggestions on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) {
+    document.getElementById('suggestions').classList.remove('open');
+  }
+});
+
+// ─── Build static UI ──────────────────────────────────────────────────────────
+function buildUI() {
+  const viz = document.getElementById('pipelineViz');
+  AGENTS.forEach((agent, i) => {
+    const id = agentId(agent.name);
+    const node = document.createElement('div');
+    node.className = 'pipeline-node';
+    node.innerHTML = `
+      <div class="pipeline-dot" id="pdot-${id}">${agent.emoji}</div>
+      <span class="pipeline-label">${agent.name.split(' ')[0]}</span>
+    `;
+    viz.appendChild(node);
+    if (i < AGENTS.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'pipeline-arrow';
+      viz.appendChild(arrow);
+    }
+  });
+
+  const grid = document.getElementById('agentsGrid');
+  AGENTS.forEach(agent => {
+    rawText[agent.name] = '';
+    const id = agentId(agent.name);
+    const card = document.createElement('div');
+    card.className = 'agent-card';
+    card.id = `card-${id}`;
+    card.innerHTML = `
+      <div class="card-header" onclick="toggleCard('${id}')">
+        <div class="agent-icon">${agent.emoji}</div>
+        <div class="card-meta">
+          <div class="card-title">
+            ${agent.name}
+            <div class="thinking-indicator">
+              <div class="thinking-dot"></div>
+              <div class="thinking-dot"></div>
+              <div class="thinking-dot"></div>
+            </div>
+          </div>
+          <div class="card-subtitle">${agent.subtitle}</div>
+        </div>
+        <span class="status-badge waiting" id="badge-${id}">Waiting</span>
+        <span class="card-chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <div class="card-content" id="content-${id}"></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function agentId(name) { return name.replace(/\s+/g, ''); }
+function toggleCard(id) {
+  const card = document.getElementById(`card-${id}`);
+  if (card.classList.contains('has-content')) card.classList.toggle('expanded');
+}
+
+// ─── Phase 1: Research the company ───────────────────────────────────────────
+async function startEngagement() {
+  if (isRunning || companyName.length < 2) return;
+  isRunning = true;
+
+  // Reset everything
+  rawText = {};
+  companyProfile = '';
+  AGENTS.forEach(a => { rawText[a.name] = ''; });
+  document.getElementById('pipelineComplete').classList.remove('visible');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').innerHTML = `
+    <span style="animation:spin 1s linear infinite;display:inline-block">⟳</span>
+    <span>Researching…</span>
+  `;
+
+  AGENTS.forEach(agent => {
+    const id = agentId(agent.name);
+    const card = document.getElementById(`card-${id}`);
+    card.className = 'agent-card';
+    const badge = document.getElementById(`badge-${id}`);
+    badge.className = 'status-badge waiting';
+    badge.textContent = 'Waiting';
+    document.getElementById(`content-${id}`).innerHTML = '';
+    document.getElementById(`pdot-${id}`).classList.remove('active', 'done');
+  });
+
+  // Show profile card in "researching" state
+  const profileCard = document.getElementById('profileCard');
+  document.getElementById('profileCompany').textContent = companyName;
+  document.getElementById('profileIcon').textContent = '🔎';
+  document.getElementById('profileStatus').textContent = 'Researching…';
+  document.getElementById('profileContent').innerHTML = '<span style="color:var(--text-3);font-size:13px">Mistral is analysing ' + companyName + '\'s Spain operations, technology profile, and AI readiness…</span>';
+  document.getElementById('profileToggle').style.display = 'none';
+  profileCard.classList.add('visible');
+
+  // Stream company research
+  const res = await fetch('/research-company', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company: companyName })
+  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const d = JSON.parse(line.slice(6));
+        if (d.type === 'profile_ready') {
+          companyProfile = d.profile;
+          showProfile(companyName, d.profile);
+        }
+      } catch(e) {}
+    }
+  }
+
+  // Phase 2: run the main pipeline
+  await runPipeline();
+}
+
+function showProfile(name, profile) {
+  document.getElementById('profileIcon').textContent = '🏢';
+  document.getElementById('profileStatus').textContent = 'Profile ready';
+  document.getElementById('profileStatus').style.background = 'rgba(255,112,0,0.08)';
+  document.getElementById('profileStatus').style.color = 'rgba(255,112,0,0.8)';
+
+  // Render first 4 lines of profile as plain text preview
+  const lines = profile.split('\n').filter(l => l.trim()).slice(0, 5).join('\n');
+  const contentEl = document.getElementById('profileContent');
+  contentEl.innerHTML = `<span style="font-size:13px;color:rgba(245,245,245,0.7);white-space:pre-line">${escHtml(lines)}</span><div class="profile-fade" id="profileFade"></div>`;
+
+  const toggle = document.getElementById('profileToggle');
+  toggle.style.display = 'inline-block';
+  toggle.textContent = 'Show full profile ▼';
+
+  document.getElementById('runBtn').innerHTML = `
+    <span style="animation:spin 1s linear infinite;display:inline-block">⟳</span>
+    <span>Running…</span>
+  `;
+}
+
+let profileExpanded = false;
+function toggleProfile() {
+  profileExpanded = !profileExpanded;
+  const el = document.getElementById('profileContent');
+  const toggle = document.getElementById('profileToggle');
+  const fade = document.getElementById('profileFade');
+  if (profileExpanded) {
+    const fullHtml = `<span style="font-size:13px;color:rgba(245,245,245,0.7);white-space:pre-line">${escHtml(companyProfile)}</span>`;
+    el.innerHTML = fullHtml;
+    el.classList.add('expanded');
+    toggle.textContent = 'Show less ▲';
+  } else {
+    const lines = companyProfile.split('\n').filter(l => l.trim()).slice(0, 5).join('\n');
+    el.innerHTML = `<span style="font-size:13px;color:rgba(245,245,245,0.7);white-space:pre-line">${escHtml(lines)}</span><div class="profile-fade"></div>`;
+    el.classList.remove('expanded');
+    toggle.textContent = 'Show full profile ▼';
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Phase 2: run the pipeline ────────────────────────────────────────────────
+async function runPipeline() {
+  document.getElementById('progressBar').classList.add('visible');
+  updateProgress(0);
+
+  const res = await fetch('/run-pipeline', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company: companyName, profile: companyProfile })
+  });
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try { handleEvent(JSON.parse(line.slice(6))); } catch(e) {}
+    }
+  }
+}
+
+// ─── Event handlers ───────────────────────────────────────────────────────────
+function handleEvent(d) {
+  if (d.type === 'complete')       { onComplete(); return; }
+  if (d.type === 'start')          { onStart(d.agent); return; }
+  if (d.type === 'done')           { onDone(d.agent); return; }
+  if (d.type === 'chunk' && d.chunk) { onChunk(d.agent, d.chunk); return; }
+}
+
+function onStart(name) {
+  const id = agentId(name);
+  const card = document.getElementById(`card-${id}`);
+  const badge = document.getElementById(`badge-${id}`);
+  card.classList.add('visible', 'streaming', 'has-content', 'expanded');
+  badge.className = 'status-badge streaming';
+  badge.textContent = 'Thinking…';
+  const dot = document.getElementById(`pdot-${id}`);
+  dot.classList.add('active');
+  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  updateProgress((AGENTS.findIndex(a => a.name === name) / AGENTS.length) * 100);
+}
+
+function onChunk(name, chunk) {
+  rawText[name] += chunk;
+  const id = agentId(name);
+  const el = document.getElementById(`content-${id}`);
+  el.innerHTML = marked.parse(rawText[name]) + `<span class="cursor"></span>`;
+  const card = document.getElementById(`card-${id}`);
+  if (card.getBoundingClientRect().bottom < window.innerHeight + 120) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+}
+
+function onDone(name) {
+  const id = agentId(name);
+  const card = document.getElementById(`card-${id}`);
+  const badge = document.getElementById(`badge-${id}`);
+  const dot = document.getElementById(`pdot-${id}`);
+  card.classList.remove('streaming');
+  card.classList.add('done');
+  badge.className = 'status-badge done';
+  badge.textContent = '✓ Done';
+  dot.classList.remove('active');
+  dot.classList.add('done');
+  document.getElementById(`content-${id}`).innerHTML = marked.parse(rawText[name]);
+  updateProgress(((AGENTS.findIndex(a => a.name === name) + 1) / AGENTS.length) * 100);
+}
+
+function onComplete() {
+  isRunning = false;
+  updateProgress(100);
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').innerHTML = `<span>↺</span> <span>New Company</span>`;
+  document.getElementById('completeMsg').textContent =
+    `Full engagement lifecycle for ${companyName} simulated — ready to present.`;
+  document.getElementById('pipelineComplete').classList.add('visible');
+  document.getElementById('cardsToolbar').classList.add('visible');
+  setTimeout(() => {
+    document.getElementById('pipelineComplete').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+}
+
+function updateProgress(pct) {
+  document.getElementById('progressFill').style.width = `${pct}%`;
+}
+
+// ─── PDF Export ──────────────────────────────────────────────────────────────
+async function exportPDF() {
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  document.getElementById('pdfOverlay').classList.add('open');
+  setPdfStatus('Loading PDF engine…');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+  const PW = 210; // A4 width mm
+  const PH = 297; // A4 height mm
+  const ML = 18, MR = 18, MT = 18, MB = 18;
+  const CW = PW - ML - MR;
+
+  // ── brand colours
+  const ORANGE  = [255, 112, 0];
+  const BLACK   = [13,  13,  13];
+  const DARK    = [28,  28,  28];
+  const GREY1   = [245, 245, 245];
+  const GREY2   = [136, 136, 136];
+  const GREY3   = [68,  68,  68];
+  const WHITE   = [255, 255, 255];
+  const OPALPHA = [255, 245, 235]; // very light orange tint for rows
+
+  let y = 0; // current Y cursor in mm
+  let page = 1;
+
+  function newPage() {
+    doc.addPage();
+    page++;
+    y = MT;
+    // subtle header line on every page
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.4);
+    doc.line(ML, 12, PW - MR, 12);
+    doc.setFontSize(8); doc.setTextColor(...GREY2);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Mistral AI · AI Deployment Strategy Report — ${companyName}`, ML, 9);
+    doc.text(`Page ${page}`, PW - MR, 9, { align: 'right' });
+  }
+
+  function checkY(needed) {
+    if (y + needed > PH - MB) { newPage(); }
+  }
+
+  function addText(text, fontSize, style, color, indent = 0, lineH = null) {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', style);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, CW - indent);
+    const lh = lineH || fontSize * 0.4;
+    checkY(lines.length * lh + 2);
+    lines.forEach(line => {
+      doc.text(line, ML + indent, y);
+      y += lh;
+    });
+  }
+
+  function hRule(col = GREY3, w = 0.2) {
+    checkY(3);
+    doc.setDrawColor(...col);
+    doc.setLineWidth(w);
+    doc.line(ML, y, PW - MR, y);
+    y += 3;
+  }
+
+  // ── COVER PAGE ────────────────────────────────────────────────────────────
+  setPdfStatus('Building cover page…');
+
+  // full-bleed dark background
+  doc.setFillColor(...BLACK);
+  doc.rect(0, 0, PW, PH, 'F');
+
+  // orange accent strip
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 0, 5, PH, 'F');
+
+  // Mistral logo mark (pixel grid approximation)
+  const lx = ML + 4, ly = 42, ls = 7;
+  doc.setFillColor(...ORANGE);
+  doc.rect(lx, ly, ls * 3, ls * 3, 'F');
+  doc.setFillColor(...BLACK);
+  // inner squares to recreate the icon
+  [[0,0],[2,0],[0,2],[2,2],[1,1],[0,1],[2,1]].forEach(([c,r]) => {
+    doc.rect(lx + c * ls + 1, ly + r * ls + 1, ls - 2, ls - 2, 'F');
+  });
+
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...ORANGE);
+  doc.text('MISTRAL AI', ML + 4 + ls * 3 + 6, ly + ls + 2);
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GREY2);
+  doc.text('La Plateforme · mistral-large-latest', ML + 4 + ls * 3 + 6, ly + ls + 8);
+
+  // eyebrow
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GREY2);
+  doc.text('AI DEPLOYMENT STRATEGY REPORT', ML + 4, 90, { charSpace: 1.5 });
+
+  // company name
+  doc.setFontSize(28); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...GREY1);
+  const cLines = doc.splitTextToSize(companyName.toUpperCase(), CW - 4);
+  cLines.forEach((line, i) => { doc.text(line, ML + 4, 100 + i * 14); });
+
+  const afterTitle = 100 + cLines.length * 14 + 6;
+
+  // orange rule
+  doc.setFillColor(...ORANGE);
+  doc.rect(ML + 4, afterTitle, 40, 1.2, 'F');
+
+  // subtitle
+  doc.setFontSize(12); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GREY2);
+  const sub = 'Enterprise AI Engagement · Discovery to Deployment';
+  doc.text(sub, ML + 4, afterTitle + 10);
+
+  // generated date
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  doc.setFontSize(9); doc.setTextColor(...GREY3);
+  doc.text(`Generated: ${dateStr}`, ML + 4, afterTitle + 20);
+
+  // pipeline summary pills at bottom
+  const pills = ['🔍 Account Strategist','📊 Value Engineer','🏗️ PoV Architect','🎤 Executive Storyteller','🚀 Deployment Strategist'];
+  doc.setFontSize(8); doc.setTextColor(...GREY2);
+  doc.text('PIPELINE STAGES', ML + 4, PH - 48);
+  pills.forEach((p, i) => {
+    const px = ML + 4 + i * 38;
+    doc.setFillColor(30, 30, 30);
+    doc.roundedRect(px, PH - 43, 36, 9, 2, 2, 'F');
+    doc.setDrawColor(...GREY3);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(px, PH - 43, 36, 9, 2, 2, 'S');
+    doc.setTextColor(...GREY2);
+    // strip emoji for pdf
+    doc.text(p.replace(/\p{Emoji}/gu, '').trim(), px + 3, PH - 37);
+  });
+
+  // confidential footer
+  doc.setFontSize(7.5); doc.setTextColor(...GREY3);
+  doc.text('Confidential · Prepared using Mistral AI · For internal distribution only', ML + 4, PH - 10);
+
+  // ── COMPANY PROFILE ───────────────────────────────────────────────────────
+  setPdfStatus('Adding company profile…');
+  newPage();
+
+  // section header helper
+  function sectionHeader(title, emoji = '') {
+    checkY(20);
+    doc.setFillColor(...BLACK);
+    doc.rect(ML, y - 5, CW, 12, 'F');
+    doc.setFillColor(...ORANGE);
+    doc.rect(ML, y - 5, 3, 12, 'F');
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GREY1);
+    doc.text(`${emoji}  ${title}`.trim(), ML + 8, y + 3);
+    y += 12;
+  }
+
+  sectionHeader('Company Profile', '');
+  y += 2;
+
+  if (companyProfile) {
+    // strip markdown, render as plain paragraphs
+    const profilePlain = companyProfile
+      .replace(/#{1,6}\s?/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`/g, '')
+      .replace(/\|[^\n]+\|/g, '') // skip table rows
+      .replace(/-{3,}/g, '')
+      .split('\n').filter(l => l.trim());
+
+    for (const line of profilePlain) {
+      if (!line.trim()) continue;
+      const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•');
+      const text = line.replace(/^[-•]\s*/, '');
+      if (isBullet) {
+        checkY(6);
+        doc.setFillColor(...ORANGE);
+        doc.circle(ML + 3, y - 1.2, 0.8, 'F');
+        addText(text, 9, 'normal', GREY1, 6, 5);
+      } else {
+        addText(line, 9, 'normal', GREY1, 0, 5);
+      }
+    }
+  }
+  y += 4;
+
+  // ── AGENT SECTIONS ────────────────────────────────────────────────────────
+  const sectionMeta = [
+    { name: 'Account Strategist',    emoji: '', label: 'Discovery Brief & MEDDPICC Qualification' },
+    { name: 'Value Engineer',        emoji: '', label: 'ROI Model & Business Case' },
+    { name: 'PoV Architect',         emoji: '', label: 'Proof of Value Design' },
+    { name: 'Executive Storyteller', emoji: '', label: 'Executive Presentation Narrative' },
+    { name: 'Deployment Strategist', emoji: '', label: 'Deployment & Expansion Playbook' },
+  ];
+
+  for (const meta of sectionMeta) {
+    const content = rawText[meta.name];
+    if (!content) continue;
+
+    setPdfStatus(`Adding ${meta.name}…`);
+
+    // always start each major section on a new page
+    newPage();
+    sectionHeader(meta.label);
+    y += 3;
+
+    // parse markdown into tokens and render
+    const lines = content.split('\n');
+    let inTable = false;
+    let tableRows = [];
+
+    function flushTable() {
+      if (!tableRows.length) return;
+      // render table rows
+      const colW = CW / Math.max(...tableRows.map(r => r.length));
+      tableRows.forEach((row, ri) => {
+        checkY(7);
+        if (ri === 0) {
+          doc.setFillColor(40, 40, 40);
+          doc.rect(ML, y - 4.5, CW, 6.5, 'F');
+        } else if (ri % 2 === 0) {
+          doc.setFillColor(22, 22, 22);
+          doc.rect(ML, y - 4.5, CW, 6.5, 'F');
+        }
+        row.forEach((cell, ci) => {
+          const cellX = ML + ci * colW + 2;
+          doc.setFontSize(8);
+          doc.setFont('helvetica', ri === 0 ? 'bold' : 'normal');
+          doc.setTextColor(...(ri === 0 ? GREY2 : GREY1));
+          const truncated = doc.splitTextToSize(cell.trim(), colW - 3)[0] || '';
+          doc.text(truncated, cellX, y);
+        });
+        y += 6.5;
+      });
+      doc.setDrawColor(...GREY3); doc.setLineWidth(0.15);
+      doc.line(ML, y, PW - MR, y);
+      y += 4;
+      tableRows = [];
+      inTable = false;
+    }
+
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+
+      // heading detection
+      const h2 = line.match(/^#{1,2}\s+(.*)/);
+      const h3 = line.match(/^#{3}\s+(.*)/);
+      const bullet = line.match(/^[-*+]\s+(.*)/);
+      const numbered = line.match(/^\d+\.\s+(.*)/);
+      const tableRow = line.startsWith('|') && line.endsWith('|');
+      const tableSep = /^\|[-|:\s]+\|$/.test(line);
+
+      if (tableRow && !tableSep) {
+        inTable = true;
+        const cells = line.split('|').slice(1, -1);
+        tableRows.push(cells);
+        continue;
+      }
+      if (tableSep) continue;
+      if (inTable && !tableRow) { flushTable(); }
+
+      if (h2) {
+        y += 3;
+        checkY(10);
+        doc.setFillColor(28, 28, 28);
+        doc.rect(ML, y - 4, CW, 9, 'F');
+        doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...ORANGE);
+        const clean = h2[1].replace(/\*/g,'').replace(/[🎯🔍📊🏗️🎤🚀✅⚡🇪🇸🏛️💡]/gu,'').trim();
+        doc.text(clean, ML + 4, y + 1.5);
+        y += 9;
+        doc.setFillColor(...ORANGE);
+        doc.rect(ML, y, 28, 0.8, 'F');
+        y += 4;
+      } else if (h3) {
+        y += 2;
+        checkY(7);
+        doc.setFontSize(8.5); doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...GREY2);
+        const clean = h3[1].replace(/\*/g,'').trim().toUpperCase();
+        doc.text(clean, ML, y, { charSpace: 0.8 });
+        y += 5;
+        doc.setDrawColor(50,50,50); doc.setLineWidth(0.15);
+        doc.line(ML, y - 1, PW - MR, y - 1);
+        y += 1;
+      } else if (bullet || numbered) {
+        const text = (bullet ? bullet[1] : numbered[1]).replace(/\*\*/g,'').replace(/\*/g,'');
+        if (!text.trim()) continue;
+        checkY(6);
+        doc.setFillColor(...ORANGE);
+        doc.circle(ML + 2.5, y - 1.2, 0.7, 'F');
+        addText(text, 8.5, 'normal', GREY1, 6, 4.8);
+      } else if (line.trim() === '' || line.match(/^---+/)) {
+        y += 2;
+      } else if (line.trim()) {
+        // normal paragraph — strip bold markers
+        const clean = line.replace(/\*\*/g,'').replace(/\*/g,'');
+        addText(clean, 8.5, 'normal', [210, 210, 210], 0, 5);
+        y += 1;
+      }
+    }
+    if (inTable) flushTable();
+    y += 4;
+  }
+
+  // ── LAST PAGE: DISCLAIMER ─────────────────────────────────────────────────
+  newPage();
+  doc.setFillColor(...BLACK);
+  doc.rect(0, 0, PW, PH, 'F');
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 0, 5, PH, 'F');
+
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...GREY1);
+  doc.text('About This Report', ML + 4, MT + 16);
+
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GREY2);
+  const disc = [
+    `This report was generated automatically by a multi-agent AI pipeline powered`,
+    `by Mistral AI's mistral-large-latest model via La Plateforme API.`,
+    ``,
+    `The pipeline simulates the full workflow of a Mistral AI Deployment Strategist:`,
+    `from initial MEDDPICC qualification and ROI modelling, through Proof of Value`,
+    `design and executive storytelling, to a production deployment and account`,
+    `expansion playbook.`,
+    ``,
+    `Company data is researched in real-time by Mistral AI and may contain`,
+    `estimates. All strategic recommendations are AI-generated and should be`,
+    `validated by a qualified human strategist before presentation to clients.`,
+    ``,
+    `Technology: Python · FastAPI · Mistral La Plateforme · SSE streaming · jsPDF`,
+    `Model: mistral-large-latest · Agents: 5 specialist agents with full context chaining`,
+  ];
+  disc.forEach((line, i) => {
+    doc.text(line, ML + 4, MT + 32 + i * 6);
+  });
+
+  doc.setFontSize(8); doc.setTextColor(...GREY3);
+  doc.text('mistral.ai', ML + 4, PH - 14);
+  doc.text(dateStr, PW - MR, PH - 14, { align: 'right' });
+
+  // ── SAVE ──────────────────────────────────────────────────────────────────
+  setPdfStatus('Saving PDF…');
+  const filename = `Mistral_AI_Strategy_${companyName.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(filename);
+
+  document.getElementById('pdfOverlay').classList.remove('open');
+  btn.disabled = false;
+}
+
+// ─── Expand / Collapse all ───────────────────────────────────────────────────
+function expandAll() {
+  AGENTS.forEach(a => {
+    const card = document.getElementById(`card-${agentId(a.name)}`);
+    if (card && card.classList.contains('has-content')) card.classList.add('expanded');
+  });
+}
+function collapseAll() {
+  AGENTS.forEach(a => {
+    const card = document.getElementById(`card-${agentId(a.name)}`);
+    if (card) card.classList.remove('expanded');
+  });
+}
+
+// ─── PDF Export ──────────────────────────────────────────────────────────────
+// Generates a clean white-background, black-text executive summary PDF.
+// Extracts key highlights from each agent — no code, < 10 pages.
+async function exportPDF() {
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true;
+  document.getElementById('pdfOverlay').classList.add('open');
+  setPdfStatus('Preparing report…');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const PW = 210, PH = 297;
+  const ML = 18, MR = 18, MT = 22, MB = 22;
+  const CW = PW - ML - MR;
+
+  // Colours — white background, black text
+  const BLACK  = [20,  20,  20 ];
+  const DARK   = [50,  50,  50 ];
+  const MID    = [100, 100, 100];
+  const LIGHT  = [160, 160, 160];
+  const ORANGE = [255, 112, 0  ];
+  const WHITE  = [255, 255, 255];
+  const ROW_A  = [250, 250, 250];
+  const ROW_B  = [255, 255, 255];
+
+  let y = MT;
+  let pageNum = 1;
+
+  function addPageHeader() {
+    doc.setFillColor(...WHITE);
+    doc.rect(0, 0, PW, PH, 'F');
+    // top rule
+    doc.setFillColor(...ORANGE);
+    doc.rect(ML, 12, CW, 0.8, 'F');
+    // header text
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...LIGHT);
+    doc.text(`Mistral AI · AI Deployment Strategy · ${companyName}`, ML, 10);
+    doc.text(`Page ${pageNum}`, PW - MR, 10, { align: 'right' });
+    y = MT;
+  }
+
+  function newPage() {
+    doc.addPage();
+    pageNum++;
+    addPageHeader();
+  }
+
+  function checkY(needed) {
+    if (y + needed > PH - MB) newPage();
+  }
+
+  // Write a line of text, wrapping as needed, returning final y
+  function writeLine(text, size, style, color, indent = 0, leading = null) {
+    if (!text.trim()) { y += 3; return; }
+    doc.setFontSize(size);
+    doc.setFont('helvetica', style);
+    doc.setTextColor(...color);
+    const wrapped = doc.splitTextToSize(text, CW - indent);
+    const lh = leading || size * 0.42;
+    checkY(wrapped.length * lh + 1);
+    wrapped.forEach(l => { doc.text(l, ML + indent, y); y += lh; });
+  }
+
+  function sectionBanner(title, num) {
+    checkY(16);
+    // orange left accent bar
+    doc.setFillColor(...ORANGE);
+    doc.rect(ML, y - 5, 3, 13, 'F');
+    // light background
+    doc.setFillColor(255, 248, 240);
+    doc.rect(ML + 3, y - 5, CW - 3, 13, 'F');
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...BLACK);
+    doc.text(`${num}. ${title}`, ML + 8, y + 4);
+    y += 14;
+  }
+
+  function subheading(text) {
+    y += 3;
+    checkY(10);
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...ORANGE);
+    doc.text(text.toUpperCase(), ML, y, { charSpace: 0.6 });
+    y += 5;
+    doc.setDrawColor(...ORANGE); doc.setLineWidth(0.3);
+    doc.line(ML, y - 1, ML + 40, y - 1);
+    y += 2;
+  }
+
+  function bullet(text) {
+    if (!text.trim()) return;
+    checkY(6);
+    doc.setFillColor(...ORANGE);
+    doc.circle(ML + 2.2, y - 1.3, 0.8, 'F');
+    writeLine(text, 9, 'normal', BLACK, 6, 5);
+  }
+
+  function drawTable(headers, rows) {
+    if (!rows.length) return;
+    const cols = headers.length;
+    const colW = CW / cols;
+    // header row
+    checkY(9);
+    doc.setFillColor(240, 240, 240);
+    doc.rect(ML, y - 5, CW, 8, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    headers.forEach((h, i) => doc.text(h, ML + i * colW + 2, y));
+    y += 5;
+    doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
+    doc.line(ML, y, PW - MR, y);
+    y += 2;
+    // data rows
+    rows.forEach((row, ri) => {
+      checkY(7);
+      doc.setFillColor(...(ri % 2 === 0 ? ROW_A : ROW_B));
+      doc.rect(ML, y - 4.5, CW, 7, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...BLACK);
+      row.forEach((cell, ci) => {
+        const safe = doc.splitTextToSize(String(cell || ''), colW - 3)[0] || '';
+        doc.text(safe, ML + ci * colW + 2, y);
+      });
+      y += 7;
+    });
+    doc.setDrawColor(210, 210, 210);
+    doc.line(ML, y, PW - MR, y);
+    y += 4;
+  }
+
+  // ── Helper: extract key bullets from markdown text ────────────────────────
+  function extractBullets(md, limit = 6) {
+    return md.split('\n')
+      .filter(l => /^[-*+]\s+/.test(l.trim()) || /^\d+\.\s+/.test(l.trim()))
+      .map(l => l.replace(/^[-*+\d.]+\s+/, '').replace(/\*\*/g, '').trim())
+      .filter(l => l.length > 10 && l.length < 300)
+      .filter(l => !l.match(/```|^\s*\|/))  // skip code and table lines
+      .slice(0, limit);
+  }
+
+  // Extract lines under a specific heading from markdown
+  function extractUnderHeading(md, headingPattern, maxLines = 8) {
+    const lines = md.split('\n');
+    let capture = false;
+    const out = [];
+    for (const l of lines) {
+      if (headingPattern.test(l)) { capture = true; continue; }
+      if (capture && /^#{1,3}\s/.test(l) && !headingPattern.test(l)) { capture = false; }
+      if (capture && l.trim()) out.push(l.trim());
+      if (out.length >= maxLines) break;
+    }
+    return out.join(' ').replace(/\*\*/g, '').replace(/\*/g, '').trim();
+  }
+
+  // Extract all markdown table rows as arrays
+  function extractTables(md, maxTables = 2) {
+    const tables = [];
+    let current = [];
+    for (const l of md.split('\n')) {
+      if (l.trim().startsWith('|') && l.trim().endsWith('|')) {
+        if (/^[|\s:-]+$/.test(l.replace(/\|/g,''))) continue; // separator row
+        const cells = l.split('|').slice(1,-1).map(c => c.replace(/\*\*/g,'').trim());
+        current.push(cells);
+      } else if (current.length) {
+        tables.push(current);
+        current = [];
+        if (tables.length >= maxTables) break;
+      }
+    }
+    if (current.length) tables.push(current);
+    return tables.slice(0, maxTables);
+  }
+
+  const dateStr = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+
+  // ══ COVER PAGE ══════════════════════════════════════════════════════════════
+  doc.setFillColor(...WHITE);
+  doc.rect(0, 0, PW, PH, 'F');
+
+  // left orange bar
+  doc.setFillColor(...ORANGE);
+  doc.rect(0, 0, 8, PH, 'F');
+
+  // Mistral wordmark area
+  doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...ORANGE);
+  doc.text('MISTRAL AI', ML + 2, 36, { charSpace: 2 });
+  doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...LIGHT);
+  doc.text('AI Deployment Strategist · Enterprise Engagement Report', ML + 2, 43);
+
+  // horizontal rule
+  doc.setDrawColor(...ORANGE); doc.setLineWidth(1);
+  doc.line(ML + 2, 48, PW - MR, 48);
+
+  // Company name (large)
+  doc.setFontSize(30); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...BLACK);
+  const cLines = doc.splitTextToSize(companyName, CW - 4);
+  cLines.forEach((l, i) => doc.text(l, ML + 2, 66 + i * 16));
+  const titleBottom = 66 + cLines.length * 16;
+
+  doc.setFontSize(13); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MID);
+  doc.text('AI Strategy & Deployment Roadmap', ML + 2, titleBottom + 8);
+
+  // 5 stage pills
+  const stages = ['Discovery','Value Engineering','PoV Design','Executive Pitch','Deployment'];
+  doc.setFontSize(7.5); doc.setTextColor(...DARK);
+  doc.text('PIPELINE STAGES', ML + 2, titleBottom + 24);
+  stages.forEach((s, i) => {
+    const sx = ML + 2 + i * 37;
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(sx, titleBottom + 28, 35, 8, 2, 2, 'F');
+    doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
+    doc.roundedRect(sx, titleBottom + 28, 35, 8, 2, 2, 'S');
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DARK);
+    doc.text(s, sx + 17.5, titleBottom + 33.5, { align: 'center' });
+  });
+
+  // generated by / date
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...LIGHT);
+  doc.text(`Generated: ${dateStr}`, ML + 2, PH - 32);
+  doc.text('Generated with Mistral AI · mistral-large-latest via La Plateforme API', ML + 2, PH - 26);
+  doc.setDrawColor(...ORANGE); doc.setLineWidth(0.5);
+  doc.line(ML + 2, PH - 20, PW - MR, PH - 20);
+  doc.setFontSize(7.5); doc.setTextColor(...LIGHT);
+  doc.text('Confidential · For internal distribution only', ML + 2, PH - 15);
+  doc.text('mistral.ai', PW - MR, PH - 15, { align: 'right' });
+
+  // ══ EXECUTIVE SUMMARY (page 2) ══════════════════════════════════════════════
+  setPdfStatus('Writing executive summary…');
+  newPage();
+
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...BLACK);
+  doc.text('Executive Summary', ML, y);
+  y += 8;
+  doc.setFillColor(...ORANGE);
+  doc.rect(ML, y, 32, 1, 'F');
+  y += 7;
+
+  // One-line company context from profile
+  const profileSnippet = (companyProfile || '')
+    .split('\n').find(l => l.trim().length > 40 && !l.startsWith('#') && !l.startsWith('|')) || '';
+  writeLine(profileSnippet.replace(/\*\*/g,'').replace(/\*/g,'').trim(), 9.5, 'normal', DARK, 0, 5.5);
+  y += 3;
+
+  // Key numbers table from Value Engineer if available
+  const veText = rawText['Value Engineer'] || '';
+  const veTables = extractTables(veText, 1);
+  if (veTables.length && veTables[0].length > 1) {
+    subheading('Investment at a Glance');
+    drawTable(veTables[0][0], veTables[0].slice(1, 6));
+  }
+
+  // Top use cases from Account Strategist
+  const asText = rawText['Account Strategist'] || '';
+  const asTables = extractTables(asText, 1);
+  if (asTables.length && asTables[0].length > 1) {
+    subheading('Priority Use Cases');
+    drawTable(asTables[0][0], asTables[0].slice(1, 4));
+  }
+
+  y += 4;
+  writeLine('This report was generated by a Mistral AI multi-agent pipeline simulating an enterprise AI deployment engagement for ' + companyName + '.', 8.5, 'italic', MID, 0, 5);
+
+  // ══ SECTION 1: DISCOVERY & QUALIFICATION ════════════════════════════════════
+  setPdfStatus('Writing discovery section…');
+  newPage();
+  sectionBanner('Discovery & MEDDPICC Qualification', 1);
+
+  const asRaw = rawText['Account Strategist'] || '';
+  // Executive summary paragraph
+  const execSummary = extractUnderHeading(asRaw, /executive summary/i, 6);
+  if (execSummary) writeLine(execSummary, 9, 'normal', BLACK, 0, 5.5);
+  y += 2;
+
+  // Pain & champion bullets
+  subheading('Customer Pain & Opportunity');
+  extractBullets(asRaw, 5).forEach(b => bullet(b));
+  y += 2;
+
+  // Mistral differentiation
+  const diffMatch = asRaw.match(/mistral.{0,30}differentiat[^]*?(?=\n#|\n\n#|$)/i);
+  if (diffMatch) {
+    subheading("Mistral's Differentiated Position");
+    extractBullets(diffMatch[0], 3).forEach(b => bullet(b));
+  }
+  y += 2;
+
+  // Priority use cases table
+  if (asTables.length && asTables[0].length > 1) {
+    subheading('Priority Use Cases');
+    drawTable(asTables[0][0], asTables[0].slice(1, 5));
+  }
+
+  // ══ SECTION 2: BUSINESS CASE & ROI ══════════════════════════════════════════
+  setPdfStatus('Writing business case…');
+  newPage();
+  sectionBanner('Business Case & ROI Model', 2);
+
+  const vRaw = rawText['Value Engineer'] || '';
+  // Investment summary table — first full table
+  const vTables = extractTables(vRaw, 3);
+  if (vTables.length) {
+    subheading('Investment Summary');
+    drawTable(vTables[0][0], vTables[0].slice(1));
+  }
+  if (vTables.length > 1) {
+    subheading('Use Case 1 — Financial Model');
+    drawTable(vTables[1][0], vTables[1].slice(1, 6));
+  }
+  if (vTables.length > 2) {
+    subheading('Use Case 2 — Financial Model');
+    drawTable(vTables[2][0], vTables[2].slice(1, 6));
+  }
+
+  // CFO closer paragraph
+  const closerMatch = vRaw.match(/cfo.{0,20}closer[^]*?(?=\n#|$)/i) ||
+                      vRaw.match(/compelling[^]*?(?=\n#|$)/i);
+  if (closerMatch) {
+    y += 2;
+    subheading('The CFO Argument');
+    const closerText = closerMatch[0].replace(/##.+\n/,'').replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    writeLine(closerText.slice(0, 500), 9, 'normal', BLACK, 0, 5.5);
+  }
+
+  // Pilot KPIs
+  const kpiTable = vTables.find(t => t[0] && t[0][0] && /kpi|metric/i.test(t[0][0]));
+  if (kpiTable) {
+    subheading('Pilot KPIs');
+    drawTable(kpiTable[0], kpiTable.slice(1, 5));
+  }
+
+  // ══ SECTION 3: PROOF OF VALUE ════════════════════════════════════════════════
+  setPdfStatus('Writing PoV section…');
+  newPage();
+  sectionBanner('6-Week Proof of Value Design', 3);
+
+  const povRaw = rawText['PoV Architect'] || '';
+  // PoV objective
+  const objMatch = povRaw.match(/objective[:\s]*([^\n]+)/i);
+  if (objMatch) {
+    subheading('PoV Objective');
+    writeLine(objMatch[1].replace(/\*\*/g,'').trim(), 9.5, 'normal', BLACK, 0, 5.5);
+    y += 2;
+  }
+
+  // Success criteria table
+  const povTables = extractTables(povRaw, 3);
+  const successTable = povTables.find(t => t[0] && t[0].some(c => /target|kpi|success/i.test(c)));
+  if (successTable) {
+    subheading('Success Criteria');
+    drawTable(successTable[0], successTable.slice(1, 6));
+  }
+
+  // Timeline table
+  const timelineTable = povTables.find(t => t[0] && t[0].some(c => /week|phase|timeline/i.test(c)));
+  if (timelineTable) {
+    subheading('6-Week Timeline');
+    drawTable(timelineTable[0], timelineTable.slice(1));
+  }
+
+  // Resources
+  const resMatch = povRaw.match(/resources required[^]*?(?=\n#|$)/i);
+  if (resMatch) {
+    subheading('Resources Required');
+    extractBullets(resMatch[0], 4).forEach(b => bullet(b));
+  }
+
+  // ══ SECTION 4: EXECUTIVE NARRATIVE ══════════════════════════════════════════
+  setPdfStatus('Writing executive pitch…');
+  newPage();
+  sectionBanner('Executive Pitch — Key Narrative Points', 4);
+
+  const esRaw = rawText['Executive Storyteller'] || '';
+
+  // Burning platform
+  const burningMatch = esRaw.match(/burning platform[^]*?(?=slide \d|---|\n##)/i);
+  if (burningMatch) {
+    subheading('Burning Platform');
+    const clean = burningMatch[0].replace(/#+\s*.+\n?/g,'').replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    writeLine(clean.slice(0, 400), 9, 'normal', BLACK, 0, 5.5);
+    y += 2;
+  }
+
+  // Why Mistral
+  const whyMatch = esRaw.match(/why.{0,15}mistral[^]*?(?=slide \d|---|##)/i);
+  if (whyMatch) {
+    subheading('Why Mistral AI');
+    extractBullets(whyMatch[0], 3).forEach(b => bullet(b));
+    y += 2;
+  }
+
+  // Ask
+  const askMatch = esRaw.match(/(slide 10|the ask)[^]*?(?=---|elevator|handling|$)/i);
+  if (askMatch) {
+    subheading('The Ask');
+    const clean = askMatch[0].replace(/#+\s*.+\n?/g,'').replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    writeLine(clean.slice(0, 300), 9, 'normal', BLACK, 0, 5.5);
+    y += 2;
+  }
+
+  // Elevator pitch
+  const liftMatch = esRaw.match(/elevator pitch[^]*?(?=handling|$)/i);
+  if (liftMatch) {
+    subheading('30-Second Elevator Pitch');
+    const clean = liftMatch[0].replace(/#+\s*.+\n?/g,'').replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    writeLine(clean.slice(0, 300), 9, 'italic', DARK, 0, 5.5);
+  }
+
+  // Pre-empted objections
+  subheading('Key Objections Pre-empted');
+  extractBullets(esRaw.replace(/#+[^\n]*objection[^\n]*\n/i,''), 3).forEach(b => bullet(b));
+
+  // ══ SECTION 5: DEPLOYMENT & EXPANSION ═══════════════════════════════════════
+  setPdfStatus('Writing deployment roadmap…');
+  newPage();
+  sectionBanner('Deployment Roadmap & Account Expansion', 5);
+
+  const dsRaw = rawText['Deployment Strategist'] || '';
+  const dsTables = extractTables(dsRaw, 3);
+
+  // Milestone table
+  const msTable = dsTables.find(t => t[0] && t[0].some(c => /week|milestone/i.test(c)));
+  if (msTable) {
+    subheading('Phase 1 Milestones');
+    drawTable(msTable[0], msTable.slice(1));
+  }
+
+  // ARR / expansion table
+  const arrTable = dsTables.find(t => t[0] && t[0].some(c => /arr|use case|expansion/i.test(c)));
+  if (arrTable) {
+    subheading('Expansion Pipeline');
+    drawTable(arrTable[0], arrTable.slice(1, 5));
+  }
+
+  // KPI dashboard table
+  const kpiDash = dsTables.find(t => t[0] && t[0].some(c => /kpi|baseline/i.test(c)));
+  if (kpiDash) {
+    subheading('Monthly KPI Dashboard');
+    drawTable(kpiDash[0], kpiDash.slice(1, 6));
+  }
+
+  // Expansion narrative snippet
+  const expMatch = dsRaw.match(/expansion conversation[^]*?(?=\n##|reference|$)/i);
+  if (expMatch) {
+    subheading('Expansion Conversation Strategy');
+    const clean = expMatch[0].replace(/#+\s*.+\n?/g,'').replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    writeLine(clean.slice(0, 350), 9, 'normal', BLACK, 0, 5.5);
+  }
+
+  // ══ NEXT STEPS PAGE ══════════════════════════════════════════════════════════
+  setPdfStatus('Writing next steps…');
+  newPage();
+
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...BLACK);
+  doc.text('Recommended Immediate Next Steps', ML, y);
+  y += 7;
+  doc.setFillColor(...ORANGE); doc.rect(ML, y, 60, 1, 'F');
+  y += 8;
+
+  // Pull numbered lists from Deployment Strategist and Account Strategist
+  const allNextSteps = [
+    ...extractBullets(asRaw, 3).map(b => `[Discovery] ${b}`),
+    ...extractBullets(vRaw, 2).map(b => `[Business Case] ${b}`),
+    ...extractBullets(dsRaw, 4).map(b => `[Deployment] ${b}`),
+  ].slice(0, 8);
+
+  allNextSteps.forEach((step, i) => {
+    checkY(10);
+    // numbered circle
+    doc.setFillColor(...ORANGE);
+    doc.circle(ML + 4, y - 1.5, 3.5, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+    doc.text(String(i + 1), ML + 4, y - 0.2, { align: 'center' });
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...BLACK);
+    const txt = doc.splitTextToSize(step, CW - 12);
+    txt.forEach((l, li) => {
+      doc.text(l, ML + 10, y + li * 5);
+    });
+    y += txt.length * 5 + 5;
+  });
+
+  y += 6;
+  // closing line
+  doc.setDrawColor(...ORANGE); doc.setLineWidth(0.5);
+  doc.line(ML, y, PW - MR, y);
+  y += 8;
+  doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(...MID);
+  doc.text('This report was generated by Mistral AI · mistral-large-latest · La Plateforme API', ML, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${dateStr} · For internal distribution only · mistral.ai`, ML, y);
+
+  // ── SAVE ────────────────────────────────────────────────────────────────────
+  setPdfStatus('Saving…');
+  const filename = `Mistral_Strategy_${companyName.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(filename);
+
+  document.getElementById('pdfOverlay').classList.remove('open');
+  btn.disabled = false;
+}
+
+function setPdfStatus(msg) {
+  document.getElementById('pdfStatus').textContent = msg;
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+function openTechModal() { document.getElementById('techModal').classList.add('open'); }
+function closeTechModal(e) { if (e.target === document.getElementById('techModal')) closeTechModalBtn(); }
+function closeTechModalBtn() { document.getElementById('techModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTechModalBtn(); });
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildUI();
+</script>
+
+</body>
+</html>

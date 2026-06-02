@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About · Mistral AI Deployment Strategist Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --orange:  #FF7000;
+      --orange2: #FF5500;
+      --bg:      #0D0D0D;
+      --bg2:     #141414;
+      --bg3:     #1C1C1C;
+      --border:  rgba(255,255,255,0.07);
+      --text1:   #F5F5F5;
+      --text2:   #888;
+      --text3:   #444;
+      --r:       14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg); color: var(--text1);
+      min-height: 100vh; line-height: 1.65;
+    }
+
+    /* background */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,112,0,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,112,0,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .bg-glow::before {
+      content: ''; position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(255,112,0,0.06), transparent 65%);
+      top: -150px; right: -100px; border-radius: 50%;
+    }
+
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 760px; margin: 0 auto;
+      padding: 56px 24px 100px;
+    }
+
+    /* back link */
+    .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 500; color: var(--text2);
+      text-decoration: none; margin-bottom: 48px;
+      transition: color 0.2s;
+    }
+    .back:hover { color: var(--orange); }
+
+    /* hero */
+    .hero { margin-bottom: 56px; }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.09em;
+      text-transform: uppercase; color: var(--orange);
+      margin-bottom: 20px;
+    }
+    .hero-eyebrow::before {
+      content: ''; display: inline-block;
+      width: 16px; height: 2px; background: var(--orange);
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 44px); font-weight: 700;
+      letter-spacing: -0.025em; line-height: 1.12;
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--orange), var(--orange2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-lead {
+      font-size: 16px; color: rgba(245,245,245,0.7);
+      max-width: 580px; line-height: 1.7;
+    }
+
+    /* orange rule */
+    .rule {
+      width: 48px; height: 3px;
+      background: var(--orange); border-radius: 2px;
+      margin: 28px 0;
+    }
+
+    /* section */
+    section { margin-bottom: 52px; }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--orange);
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 12px; color: var(--text1);
+    }
+    p { font-size: 15px; color: rgba(245,245,245,0.72); margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    strong { color: var(--text1); font-weight: 600; }
+
+    /* cards grid */
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+    @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+    .card {
+      background: rgba(255,255,255,0.035);
+      border: 1px solid var(--border); border-radius: var(--r);
+      padding: 20px;
+    }
+    .card-icon { font-size: 22px; margin-bottom: 10px; }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--text1); margin-bottom: 5px; }
+    .card-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+    /* pipeline steps */
+    .pipeline { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(255,112,0,0.1);
+      border: 1px solid rgba(255,112,0,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--orange);
+    }
+    .step-body { flex: 1; }
+    .step-title { font-size: 14px; font-weight: 600; color: var(--text1); margin-bottom: 3px; }
+    .step-desc { font-size: 13px; color: var(--text2); line-height: 1.55; }
+
+    /* tech row */
+    .tech-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    }
+    .tech-tag {
+      padding: 5px 12px;
+      background: rgba(255,112,0,0.07);
+      border: 1px solid rgba(255,112,0,0.18);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 500; color: var(--orange);
+    }
+
+    /* quote block */
+    .quote {
+      border-left: 3px solid var(--orange);
+      padding: 16px 20px;
+      background: rgba(255,112,0,0.04);
+      border-radius: 0 var(--r) var(--r) 0;
+      font-size: 15px; font-style: italic;
+      color: rgba(245,245,245,0.75);
+      margin: 24px 0;
+    }
+    .quote cite { display: block; margin-top: 8px; font-style: normal; font-size: 12px; color: var(--text2); }
+
+    /* back btn bottom */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px;
+      background: var(--orange); color: #000;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      border: none; border-radius: var(--r); cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(255,112,0,0.3);
+    }
+    .back-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(255,112,0,0.45); }
+
+    footer {
+      text-align: center; margin-top: 64px;
+      font-size: 11.5px; color: var(--text3); letter-spacing: 0.03em;
+    }
+    footer span { color: var(--orange); }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="wrap">
+
+  <a class="back" href="/">← Back to the demo</a>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">Mistral AI · Interview Project</div>
+    <h1>AI Deployment Strategist<br><em>Showcase Demo</em></h1>
+    <p class="hero-lead">
+      A live multi-agent pipeline that simulates a complete enterprise AI
+      engagement — from first discovery call to production deployment — built
+      entirely on Mistral AI to demonstrate the core competencies of the
+      AI Deployment Strategist role.
+    </p>
+    <div class="rule"></div>
+  </div>
+
+  <!-- The Problem -->
+  <section>
+    <div class="section-label">The Problem</div>
+    <h2>Enterprise AI adoption stalls between strategy and execution</h2>
+    <p>
+      Most enterprises understand AI could transform their operations. Few successfully
+      move from that belief to a production-grade deployment. The gap isn't technical —
+      it's strategic. Companies lack a structured methodology to identify the right use
+      cases, build a compelling business case, design a low-risk proof of value, and
+      communicate the vision to executives who hold the budget.
+    </p>
+    <p>
+      In Spain specifically, this challenge is compounded by regulatory pressure
+      (GDPR, EU AI Act), regional language complexity, and a strong preference for
+      European-sovereign AI vendors — factors that make Mistral AI uniquely positioned,
+      but that require a strategist who can articulate that advantage to every
+      stakeholder in the room.
+    </p>
+  </section>
+
+  <!-- What this demo does -->
+  <section>
+    <div class="section-label">What This Demo Does</div>
+    <h2>A live simulation of the AI Deployment Strategist workflow</h2>
+    <p>
+      Enter any company with operations in Spain. The pipeline researches that
+      company in real time using Mistral AI, then routes its profile through five
+      specialist agents — each one simulating a distinct phase of a real enterprise
+      engagement:
+    </p>
+
+    <div class="pipeline" style="margin-top:20px">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">🔍 Account Strategist — Discovery & MEDDPICC</div>
+          <div class="step-desc">Conducts a structured discovery session and produces the brief an AI Deployment Strategist would share with their AE after a first executive meeting. Applies the MEDDPICC sales qualification framework to identify pain, champion, economic buyer, and competitive positioning.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">📊 Value Engineer — ROI Model & Business Case</div>
+          <div class="step-desc">Builds a quantified, defensible business case for the CFO. Calculates FTE savings, process efficiency gains, cost avoidance, and revenue uplift across the top two use cases. Delivers a 3-year investment summary, payback period, and risk-adjusted scenario analysis.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">🏗️ PoV Architect — Proof of Value Design</div>
+          <div class="step-desc">Designs a 6-week Proof of Value: technical architecture, on-premise deployment plan (for GDPR/EU AI Act compliance), success criteria, and week-by-week timeline. Funded by Mistral — the customer pays nothing until convinced.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">🎤 Executive Storyteller — Board Presentation</div>
+          <div class="step-desc">Writes the 10-slide board narrative using the Burning Platform → Vision → Proof → Path → Ask structure. Addresses the CTO on sovereignty, the CFO on ROI, the DPO on compliance, and the champion on making this their initiative. Pre-empts the three hardest objections.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">🚀 Deployment Strategist — Account Expansion Playbook</div>
+          <div class="step-desc">Owns the account after the PoV succeeds. Builds the production deployment timeline, monthly KPI dashboard, executive cadence plan, and 18-month account expansion roadmap — from initial use case to full platform, with a projected 3-year ARR trajectory.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why it matters -->
+  <section>
+    <div class="section-label">Why It Matters</div>
+    <h2>Showing the competencies, not just claiming them</h2>
+    <div class="quote">
+      "The role sits at the intersection of business strategy, AI innovation, and
+      hands-on deployment — ensuring customers achieve transformative outcomes."
+      <cite>— Mistral AI, AI Deployment Strategist job description</cite>
+    </div>
+    <p>
+      Each agent in this pipeline directly demonstrates one of the four core
+      competencies from the role description:
+    </p>
+    <div class="cards" style="margin-top:16px">
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">Strategic Discovery</div>
+        <div class="card-desc">The Account Strategist replicates an executive workshop — identifying business challenges, framing the art of the possible, and qualifying the opportunity with MEDDPICC.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏗️</div>
+        <div class="card-title">AI Solution Design</div>
+        <div class="card-desc">The PoV Architect designs a production-ready architecture using Mistral open weights for on-premise deployment — the exact artifact delivered in a real customer engagement.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">Value Realization</div>
+        <div class="card-desc">The Value Engineer and Deployment Strategist quantify ROI and build the expansion playbook — ensuring the customer maximises their investment over time.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤝</div>
+        <div class="card-title">Cross-functional Collaboration</div>
+        <div class="card-desc">Each agent receives the full output of every previous agent as context — mirroring how a real engagement passes knowledge between discovery, engineering, and sales.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical approach -->
+  <section>
+    <div class="section-label">Technical Approach</div>
+    <h2>Built with Mistral AI from first line to last</h2>
+    <p>
+      The application uses <strong>mistral-large-latest</strong> via
+      <strong>La Plateforme API</strong> for every AI call — company research,
+      and all five agent reasoning chains. Responses stream token-by-token via
+      Server-Sent Events, so the interviewer sees the AI "thinking" in real time.
+    </p>
+    <p>
+      Each agent receives the <strong>full conversation history</strong> of all
+      previous agents as context, creating a coherent chain of reasoning that
+      builds from discovery to deployment — exactly as a real strategic engagement
+      would progress.
+    </p>
+    <div class="tech-row" style="margin-top:16px">
+      <span class="tech-tag">mistral-large-latest</span>
+      <span class="tech-tag">La Plateforme API</span>
+      <span class="tech-tag">Python · FastAPI</span>
+      <span class="tech-tag">Server-Sent Events</span>
+      <span class="tech-tag">5 specialist agents</span>
+      <span class="tech-tag">Full context chaining</span>
+      <span class="tech-tag">jsPDF export</span>
+    </div>
+  </section>
+
+  <!-- Spain market context -->
+  <section>
+    <div class="section-label">Spain Market Context</div>
+    <h2>Why Mistral AI has a structural advantage in Spain</h2>
+    <p>
+      The agents in this pipeline are trained to surface Mistral's specific competitive
+      advantages in the Spanish market — advantages that a skilled AI Deployment
+      Strategist must be able to articulate fluently:
+    </p>
+    <div class="cards" style="margin-top:16px">
+      <div class="card">
+        <div class="card-icon">🏛️</div>
+        <div class="card-title">EU Sovereignty</div>
+        <div class="card-desc">GDPR compliance and EU AI Act readiness are non-negotiable for Spanish enterprises. Mistral's open weights enable full on-premise deployment — data never leaves Spain.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌍</div>
+        <div class="card-title">Multilingual Excellence</div>
+        <div class="card-desc">Spanish, Catalan, Basque — Mistral outperforms US competitors on European languages, critical for companies serving regional markets across Spain.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💶</div>
+        <div class="card-title">NextGenerationEU Funding</div>
+        <div class="card-desc">Spain has €70B+ in EU digital transformation funds. AI pilots can be funded through PERTE and NextGenerationEU instruments — removing budget as a barrier.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏢</div>
+        <div class="card-title">SME Opportunity</div>
+        <div class="card-desc">99.8% of Spanish businesses are SMEs — underserved by hyperscalers. Mistral's efficiency and open-weight models offer a rare path to affordable enterprise AI.</div>
+      </div>
+    </div>
+  </section>
+
+  <a class="back-btn" href="/">← Run the demo</a>
+
+  <footer style="margin-top:48px">
+    Built on <span>Mistral AI</span> · For interview purposes ·
+    <a href="https://mistral.ai" target="_blank" style="color:var(--orange);text-decoration:none;">mistral.ai ↗</a>
+  </footer>
+
+</div>
+</body>
+</html>
