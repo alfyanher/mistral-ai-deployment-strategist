@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
@@ -511,7 +512,9 @@ This profile will be used to run a live Mistral AI deployment strategy simulatio
         }
     ]
 
-    response = client.chat.complete(model=MODEL, messages=messages)
+    response = await asyncio.to_thread(
+        client.chat.complete, model=MODEL, messages=messages
+    )
     return response.choices[0].message.content
 
 

@@ -4,6 +4,18 @@
 
 ---
 
+## Screenshots
+
+| Landing | Company Search |
+|---|---|
+| ![Landing](docs/screenshot_landing.png) | ![Search](docs/screenshot_search.png) |
+
+| Agent Streaming Live | Pipeline Complete |
+|---|---|
+| ![Streaming](docs/screenshot_streaming.png) | ![Complete](docs/screenshot_complete.png) |
+
+---
+
 ## What This Does
 
 You type any company name with operations in Spain. Five specialised AI agents then simulate the full lifecycle of a real Mistral AI enterprise engagement — the same workflow an AI Deployment Strategist executes on the job:
